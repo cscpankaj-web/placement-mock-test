@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B.Tech Placement Mock Test</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --bg: #f4f7f6;
+            --text: #333;
+            --grey: #bdc3c7;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Tracker */
+        #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .tracker-header { margin-bottom: 15px; }
+        .tracker-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-y: auto; padding-right: 5px; }
+        
+        .q-box { 
+            width: 100%; 
+            aspect-ratio: 1/1; 
+            border: 1px solid #ccc; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-size: 13px; 
+            background: #eee; 
+            transition: all 0.2s;
+        }
+        .q-box.answered { background: var(--success) !important; color: white; border-color: var(--success); }
+        .q-box.active { border: 2.5px solid var(--secondary); font-weight: bold; box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
+
+        /* Main Content */
+        #main-test { flex-grow: 1; display: flex; flex-direction: column; padding: 40px; overflow-y: auto; }
+        .question-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        #section-title { color: var(--secondary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        #question-text { font-size: 18px; line-height: 1.5; color: var(--primary); margin-bottom: 25px; }
+        
+        .options-list { list-style: none; padding: 0; }
+        .option { 
+            margin: 12px 0; 
+            padding: 15px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .option:hover { background: #f8fbff; border-color: var(--secondary); }
+        .option.selected { background: #eef7ff; border-color: var(--secondary); border-width: 2px; }
+
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 30px; max-width: 800px; margin-left: auto; margin-right: auto; width: 100%; }
+        button { padding: 12px 28px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600; transition: opacity 0.2s; }
+        .btn-next { background: var(--secondary); color: white; }
+        .btn-prev { background: #95a5a6; color: white; }
+        .btn-submit { background: var(--success); color: white; padding: 15px; width: 100%; font-size: 16px; margin-top: 20px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        #results { display: none; text-align: center; padding: 80px 20px; background: white; border-radius: 12px; max-width: 600px; margin: 50px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow: auto; }
+            #sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #ddd; }
+            .tracker-grid { grid-template-columns: repeat(10, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="tracker-header">
+        <h2 style="margin:0; font-size: 1.2rem;">Mock Test Tracker</h2>
+        <p style="font-size: 12px; color: #666;">Green = Answered | Grey = Unanswered</p>
+    </div>
+    <div class="tracker-grid" id="tracker"></div>
+    <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 6px;">
+        <div style="display:flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>Questions:</span> <strong>60</strong>
+        </div>
+        <div style="display:flex; justify-content: space-between;">
+            <span>Answered:</span> <strong id="answered-count">0</strong>
+        </div>
+    </div>
+    <button class="btn-submit" onclick="confirmSubmit()">Finish & Submit</button>
+</div>
+
+<div id="main-test">
+    <div id="test-content">
+        <div class="question-card">
+            <div id="section-title">Section Loading...</div>
+            <p id="question-text">Loading question content...</p>
+            <div class="options-list" id="options"></div>
+        </div>
+        <div class="nav-buttons">
+            <button class="btn-prev" id="prev-btn" onclick="changeQuestion(-1)">Previous</button>
+            <button class="btn-next" id="next-btn" onclick="changeQuestion(1)">Next Question</button>
+        </div>
+    </div>
+
+    <div id="results">
+        <h1 style="color: var(--success); font-size: 48px; margin-bottom: 10px;">Done!</h1>
+        <p style="font-size: 18px; color: #666;">You have successfully submitted the test.</p>
+        <div style="font-size: 32px; margin: 30px 0; font-weight: bold;">
+            Score: <span id="score-display">0</span> / 60
+        </div>
+        <button class="btn-next" onclick="location.reload()">Take Test Again</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        // --- LOGICAL ---
+        {q: "1. What is the next number in the series: 5, 11, 23, 47, 95, ?", o: ["190", "191", "189", "192"], a: 1, s: "Logical Reasoning"},
+        {q: "2. In a certain code, COMPUTER is written as RFUVQNPC. How is MEDICINE written?", o: ["EOJDEJFM", "EOJDJEFM", "MFEJDJOE", "MFEDJJOE"], a: 1, s: "Logical Reasoning"},
+        {q: "3. If FRIEND is coded as HUMJTK, how is CANDLE written?", o: ["EDRIRL", "DCQHQK", "ESJFME", "FYOBOC"], a: 0, s: "Logical Reasoning"},
+        {q: "4. A man walks 30m South, turns left and walks 40m, then turns left again and walks 30m. How far is he from start?", o: ["30m", "40m", "70m", "100m"], a: 1, s: "Logical Reasoning"},
+        {q: "5. Pointing to a man, a woman said, 'His mother is the only daughter of my mother.' How is she related to the man?", o: ["Sister", "Grandmother", "Mother", "Daughter"], a: 2, s: "Logical Reasoning"},
+        {q: "6. Arrange in sequence: 1. Job, 2. Examination, 3. Education, 4. Application, 5. Salary", o: ["3, 2, 4, 1, 5", "3, 4, 2, 1, 5", "1, 2, 3, 4, 5", "4, 2, 3, 5, 1"], a: 0, s: "Logical Reasoning"},
+        {q: "7. Find the odd one out: Leopard, Cougar, Lion, Cheetah, Wolf", o: ["Leopard", "Cougar", "Lion", "Wolf"], a: 3, s: "Logical Reasoning"},
+        {q: "8. Statement: All windows are doors. No door is a wall. Conclusion: I. No window is a wall. II. No wall is a door.", o: ["Only I follows", "Only II follows", "Both follow", "Neither follows"], a: 2, s: "Logical Reasoning"},
+        {q: "9. If 1st January 2012 was a Sunday, what day was 1st January 2013?", o: ["Monday", "Tuesday", "Wednesday", "Sunday"], a: 1, s: "Logical Reasoning"},
+        {q: "10. Find the blank: F2, __, D8, C16, B32", o: ["E3", "E4", "G4", "D4"], a: 1, s: "Logical Reasoning"},
+        {q: "11. Find the missing number: 7, 15, 31, 63, 127, ?", o: ["254", "255", "256", "253"], a: 1, s: "Logical Reasoning"},
+        {q: "12. Circular Seating: B is between F and D; E is between A and C; A is to left of D. Who is between F and C?", o: ["A", "E", "B", "D"], a: 0, s: "Logical Reasoning"},
+        {q: "13. Assertion: Steam engines were invented in Industrial Revolution. Reason: They were needed for mines.", o: ["Both true, R explains A", "Both true, R doesn't explain A", "A true, R false", "A false, R true"], a: 0, s: "Logical Reasoning"},
+        {q: "14. Analogy: PORK : PIG :: ?", o: ["ROOSTER : CHICKEN", "MUTTON : SHEEP", "STEER : BEEF", "LOBSTER : CRUSTACEAN"], a: 1, s: "Logical Reasoning"},
+        {q: "15. Odd one out: 64, 125, 216, 343, 512, 1100", o: ["125", "343", "1100", "512"], a: 2, s: "Logical Reasoning"},
+        {q: "16. If 'Rain' is 'Water', 'Water' is 'Road', 'Road' is 'Cloud'... where do planes fly?", o: ["Road", "Sea", "Cloud", "Sky"], a: 1, s: "Logical Reasoning"},
+        {q: "17. A 3x3x3 cube is painted red and cut into 27 small cubes. How many have zero faces painted?", o: ["1", "3", "6", "0"], a: 0, s: "Logical Reasoning"},
+        {q: "18. What is the angle between clock hands at 3:40?", o: ["120°", "125°", "130°", "135°"], a: 2, s: "Logical Reasoning"},
+        {q: "19. Complete the analogy: 8 : 512 :: 9 : ?", o: ["729", "810", "648", "900"], a: 0, s: "Logical Reasoning"},
+        {q: "20. If 5472 = 9, 6342 = 6, 7584 = 6, then what is 9236 = ?", o: ["2", "3", "4", "5"], a: 0, s: "Logical Reasoning"},
+
+        // --- QUANT ---
+        {q: "21. A sum of money at simple interest amounts to $815 in 3 years and $854 in 4 years. The sum is:", o: ["$650", "$690", "$698", "$700"], a: 2, s: "Quantitative Aptitude"},
+        {q: "22. A fruit seller had 420 apples left after selling 40%. Originally, he had:", o: ["588", "600", "672", "700"], a: 3, s: "Quantitative Aptitude"},
+        {q: "23. If 20% of a = b, then b% of 20 is the same as:", o: ["4% of a", "5% of a", "20% of a", "None"], a: 0, s: "Quantitative Aptitude"},
+        {q: "24. A train running at 60 km/hr crosses a pole in 9 seconds. Length of the train?", o: ["120 m", "180 m", "324 m", "150 m"], a: 3, s: "Quantitative Aptitude"},
+        {q: "25. A and B in 12 days, B and C in 15 days, C and A in 20 days. Together they take:", o: ["5 days", "10 days", "12 days", "15 days"], a: 1, s: "Quantitative Aptitude"},
+        {q: "26. The average of first five multiples of 3 is:", o: ["3", "9", "12", "15"], a: 1, s: "Quantitative Aptitude"},
+        {q: "27. Toffees at 6 for a rupee. To gain 20%, sell how many for a rupee?", o: ["3", "4", "5", "6"], a: 2, s: "Quantitative Aptitude"},
+        {q: "28. Probability of sum 7 with two dice:", o: ["1/6", "5/36", "1/12", "1/9"], a: 0, s: "Quantitative Aptitude"},
+        {q: "29. Ratio of ages A:B is 3:5. Sum is 80. A's age is:", o: ["30", "40", "50", "60"], a: 0, s: "Quantitative Aptitude"},
+        {q: "30. Equivalent single discount for 20% and 10%:", o: ["30%", "28%", "25%", "22%"], a: 1, s: "Quantitative Aptitude"},
+        {q: "31. H.C.F is 11, L.C.M is 693. One number is 77, find other:", o: ["99", "101", "44", "66"], a: 0, s: "Quantitative Aptitude"},
+        {q: "32. Pump fills in 2h, leak makes it 2.33h. Leak drains in:", o: ["7h", "8h", "12h", "14h"], a: 3, s: "Quantitative Aptitude"},
+        {q: "33. If log10 2 = 0.3010, then log10 80 is:", o: ["1.6020", "1.9030", "3.9030", "None"], a: 1, s: "Quantitative Aptitude"},
+        {q: "34. CP of 20 = SP of x. Profit 25%. x is:", o: ["15", "16", "18", "25"], a: 1, s: "Quantitative Aptitude"},
+        {q: "35. Boat speed 13, stream 4. Time for 68km downstream:", o: ["2h", "3h", "4h", "5h"], a: 2, s: "Quantitative Aptitude"},
+        {q: "36. Diagonal sqrt(41), area 20. Perimeter is:", o: ["9 cm", "18 cm", "20 cm", "41 cm"], a: 1, s: "Quantitative Aptitude"},
+        {q: "37. Ways to arrange 'LEADER':", o: ["72", "144", "360", "720"], a: 2, s: "Quantitative Aptitude"},
+        {q: "38. Weekday on 15th August 1947:", o: ["Sat", "Fri", "Thu", "Wed"], a: 1, s: "Quantitative Aptitude"},
+        {q: "39. A runs 22.5m, B runs 25m. In 1km race, B beats A by:", o: ["100m", "111m", "25m", "50m"], a: 0, s: "Quantitative Aptitude"},
+        {q: "40. If 3^(x-y) = 27 and 3^(x+y) = 243, then x is:", o: ["0", "2", "4", "6"], a: 2, s: "Quantitative Aptitude"},
+
+        // --- VERBAL ---
+        {q: "41. Synonym of 'ABANDON':", o: ["Keep", "Forsake", "Cherish", "Enforce"], a: 1, s: "Verbal Ability"},
+        {q: "42. Antonym of 'ENORMOUS':", o: ["Soft", "Tiny", "Weak", "Average"], a: 1, s: "Verbal Ability"},
+        {q: "43. Correct spelling:", o: ["Efficient", "Eficient", "Efficent", "Effecient"], a: 0, s: "Verbal Ability"},
+        {q: "44. Analogy: Embarrassed : Humiliated :: Frightened : ?", o: ["Terrified", "Agitated", "Courageous", "Reckless"], a: 0, s: "Verbal Ability"},
+        {q: "45. 'Leave no stone unturned' means:", o: ["Act strange", "Try every possible course", "Get fired", "Build wall"], a: 1, s: "Verbal Ability"},
+        {q: "46. Sentence Correction: 'He is as tall as, if not taller than, his brother.'", o: ["as tall as his brother", "taller than", "No correction required"], a: 2, s: "Verbal Ability"},
+        {q: "47. Fill in: 'The scientist was _____ by the results.'", o: ["astonished", "astonishing", "astonish", "astonishment"], a: 0, s: "Verbal Ability"},
+        {q: "48. One word: 'Person indifferent to pleasure or pain.'", o: ["Stoic", "Epicurean", "Egoist", "Sadist"], a: 0, s: "Verbal Ability"},
+        {q: "49. Correct spelling:", o: ["Occurrence", "Ocurrence", "Occurence", "Occureance"], a: 0, s: "Verbal Ability"},
+        {q: "50. Fill in: 'I have not seen him _____ last Monday.'", o: ["for", "since", "from", "till"], a: 1, s: "Verbal Ability"},
+        {q: "51. Synonym of 'CANDID':", o: ["Secretive", "Frank", "Devious", "Ambiguous"], a: 1, s: "Verbal Ability"},
+        {q: "52. Passive: 'The police caught the thief.'", o: ["The thief caught police", "The thief was caught by police", "Thief has been caught"], a: 1, s: "Verbal Ability"},
+        {q: "53. Antonym of 'ARTIFICIAL':", o: ["Natural", "Redundant", "Truthful", "Solid"], a: 0, s: "Verbal Ability"},
+        {q: "54. Fill in: 'Success depends _____ hard work.'", o: ["over", "at", "on", "for"], a: 2, s: "Verbal Ability"},
+        {q: "55. Error: 'Each of the students (A) / are required (B) / to submit their assignment (C).'", o: ["A", "B", "C", "No error"], a: 1, s: "Verbal Ability"},
+        {q: "56. 'To cry wolf' means:", o: ["Listen eagerly", "False alarm", "Turn pale", "Starvation"], a: 1, s: "Verbal Ability"},
+        {q: "57. Collective: 'A _____ of ships.'", o: ["Fleet", "Pack", "Swarm", "Shoal"], a: 0, s: "Verbal Ability"},
+        {q: "58. Synonym of 'DEFER':", o: ["Indifferent", "Defy", "Postpone", "Differ"], a: 2, s: "Verbal Ability"},
+        {q: "59. Indirect: He said, 'I am unwell.'", o: ["He said he is unwell", "He said he was unwell", "He says he is unwell"], a: 1, s: "Verbal Ability"},
+        {q: "60. Fill in: 'Neither the principal nor the teachers _____ present.'", o: ["is", "were", "was", "has"], a: 1, s: "Verbal Ability"}
+    ];
+
+    let currentIndex = 0;
+    let answers = new Array(questions.length).fill(null);
+
+    function initTracker() {
+        const tracker = document.getElementById('tracker');
+        for (let i = 0; i < questions.length; i++) {
+            const div = document.createElement('div');
+            div.className = 'q-box';
+            div.id = 'nav-' + i;
+            div.innerText = i + 1;
+            div.onclick = () => jumpTo(i);
+            tracker.appendChild(div);
+        }
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = questions[currentIndex];
+        document.getElementById('section-title').innerText = q.s;
+        document.getElementById('question-text').innerText = q.q;
+        const optionsDiv = document.getElementById('options');
+        optionsDiv.innerHTML = '';
+
+        q.o.forEach((opt, i) => {
+            const div = document.createElement('div');
+            div.className = 'option' + (answers[currentIndex] === i ? ' selected' : '');
+            div.innerHTML = `<span style="font-weight:bold; margin-right:15px;">${String.fromCharCode(65 + i)}.</span> ${opt}`;
+            div.onclick = () => selectOption(i);
+            optionsDiv.appendChild(div);
+        });
+
+        // Update Tracker UI
+        document.querySelectorAll('.q-box').forEach(b => b.classList.remove('active'));
+        document.getElementById('nav-' + currentIndex).classList.add('active');
+        
+        // Disable buttons at boundaries
+        document.getElementById('prev-btn').disabled = (currentIndex === 0);
+        document.getElementById('next-btn').innerText = (currentIndex === questions.length - 1) ? "Review All" : "Next Question";
+        
+        updateStats();
+    }
+
+    function selectOption(index) {
+        answers[currentIndex] = index;
+        document.getElementById('nav-' + currentIndex).classList.add('answered');
+        renderQuestion();
+    }
+
+    function jumpTo(index) {
+        currentIndex = index;
+        renderQuestion();
+    }
+
+    function changeQuestion(step) {
+        let newIdx = currentIndex + step;
+        if (newIdx >= 0 && newIdx < questions.length) {
+            currentIndex = newIdx;
+            renderQuestion();
+        }
+    }
+
+    function updateStats() {
+        const count = answers.filter(a => a !== null).length;
+        document.getElementById('answered-count').innerText = count;
+    }
+
+    function confirmSubmit() {
+        const unanswered = questions.length - answers.filter(a => a !== null).length;
+        const msg = unanswered > 0 
+            ? `You have ${unanswered} unanswered questions. Are you sure you want to submit?`
+            : "Are you sure you want to submit your test?";
+        
+        if(confirm(msg)) {
+            submitTest();
+        }
+    }
+
+    function submitTest() {
+        let score = 0;
+        answers.forEach((ans, i) => {
+            if(ans === questions[i].a) score++;
+        });
+
+        document.getElementById('test-content').style.display = 'none';
+        document.getElementById('sidebar').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('score-display').innerText = score;
+    }
+
+    // Start
+    initTracker();
+</script>
+
+</body>
+</html>
